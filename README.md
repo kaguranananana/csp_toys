@@ -100,3 +100,41 @@ java -cp src/puzzle Main
 - 通过“图片”菜单打开新图、查看原图、随机切换；
 - “难度设置”菜单可即时切换 3×3 / 4×4 / 5×5；
 - “挑战模式”可开始或停止计时，底部状态栏实时显示。
+
+# SimpleMDIExample 多文档文本编辑器
+
+基于 Java 8+ Swing 与 MVC 架构的课程项目，实现类似 WordPad 的多文档文本编辑器，支持新建/打开/保存/字体样式以及 MDI 窗口管理。
+
+## 功能亮点
+- **MDI 管理**：使用 `JDesktopPane + JInternalFrame`，可创建多个文档窗口，支持层叠、水平/垂直平铺。
+- **文件操作**：新建、打开 `.txt`、保存、另存为；关闭窗口前检测未保存内容。
+- **格式控制**：字体对话框、粗体/斜体/下划线切换，工具栏与菜单双入口。
+- **状态同步**：每个文档维护独立 `DocumentModel`，含内容、路径、字体、dirty 标志；窗口标题用 `*` 标记未保存。
+- **扩展预留**：控制器已预留结构，后续可添加撤销/重做、剪贴板、查找替换等功能。
+
+## 技术栈 & 结构
+- **语言**：Java 8+
+- **UI**：Swing
+- **模式**：MVC
+  - `DocumentModel` — 文档内容、字体与保存状态
+  - `MainFrame` — 主窗体、菜单、工具栏、MDI 管理
+  - `DocumentController` — 文件读写、字体/窗口操作、dirty 检查
+  - `Main` — 应用入口
+
+```
+src/
+└─ simpleMDIExample/
+   ├─ DocumentModel.java
+   ├─ DocumentController.java
+   ├─ MainFrame.java
+   └─ Main.java
+```
+
+## 构建与运行
+```bash
+cd src/simpleMDIExample
+mkdir -p out
+javac -encoding UTF-8 -d out *.java
+java -cp out Main
+```
+> 新建文档默认铺满桌面区域；通过菜单“文件/格式/窗口”即可体验全部核心功能。
