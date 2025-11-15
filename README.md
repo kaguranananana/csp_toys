@@ -56,3 +56,47 @@ java -cp out calculator.CalculatorApp
 4. **主题切换**：在浅色/深色之间动态切换，跟随系统设定。
 
 欢迎 fork/issue/PR 继续完善。***
+
+# myPuzzle 拼图游戏
+
+基于 Java 8+ 与 Swing 的课程项目，实现可加载任意图片的拼图小游戏，遵循 MVC 分层，包含菜单操作、拼图区拖拽交换、难度与挑战模式等功能。
+
+## 功能亮点
+- **图片加载**：支持从本地打开任意图片，自动缩放到合适的拼图区尺寸；可预览原图或随机轮换 `resources/images` 目录中的示例图。
+- **动态切割**：默认 3×3，可切换 4×4、5×5，切割后保持每块的原始索引以便判断胜利。
+- **鼠标拖拽**：在拼图区按下/拖动/释放即可交换两块，立即刷新视图并检测完成状态。
+- **挑战模式**：一键开启/停止计时，状态栏展示当前难度与计时；完成拼图后自动提示并停止计时。
+- **MVC 解耦**：Model 专注图片数据，View 管理 Swing UI，Controller 监听菜单与鼠标事件，逻辑清晰便于扩展。
+
+## 技术栈 & 结构
+- **语言**：Java 8+
+- **UI**：Swing（JFrame + JPanel 自绘）
+- **模式**：MVC
+  - `PuzzleModel` — 图片加载/缩放/切割、块状态与胜利判断
+  - `PuzzleView` — 菜单、拼图区、状态栏
+  - `PuzzleController` — 菜单逻辑、拖拽交换、挑战计时
+  - `Main` — 程序入口，装配 MVC
+
+```
+src/
+└─ puzzle/
+   ├─ PuzzleModel.java
+   ├─ PuzzleView.java
+   ├─ PuzzleController.java
+   └─ Main.java
+```
+
+## 构建与运行
+```bash
+# 1. 编译（需 UTF-8，因为代码含中文注释）
+javac -encoding UTF-8 src/puzzle/*.java
+
+# 2. 启动
+java -cp src/puzzle Main
+```
+> 也可以使用 IDE 直接运行 `puzzle.Main` 主类；若希望随机切换示例图片，可在项目根目录创建 `resources/images` 并放入若干 png/jpg。
+
+## 使用提示
+- 通过“图片”菜单打开新图、查看原图、随机切换；
+- “难度设置”菜单可即时切换 3×3 / 4×4 / 5×5；
+- “挑战模式”可开始或停止计时，底部状态栏实时显示。
