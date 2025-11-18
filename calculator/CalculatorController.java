@@ -7,13 +7,17 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 /**
- * Coordinates interactions between the view and the model.
+ * 控制器：作为 View 与 Model 的粘合层，负责监听按钮/键盘事件并把命令转交给模型。
+ * 同时根据模型返回的显示内容刷新视图，保证两者之间不过度耦合。
  */
 public class CalculatorController implements ActionListener {
 
     private final CalculatorModel model;
     private final CalculatorView view;
 
+    /**
+     * 构造时即完成事件绑定与显示初始化。
+     */
     public CalculatorController(CalculatorModel model, CalculatorView view) {
         this.model = model;
         this.view = view;
@@ -27,6 +31,10 @@ public class CalculatorController implements ActionListener {
         handleCommand(e.getActionCommand());
     }
 
+    /**
+     * 根据按钮/键盘发来的 action command 分派模型方法。
+     * 命令字符串与按钮标签保持一致，降低额外映射成本。
+     */
     private void handleCommand(String command) {
         if (command == null || command.isEmpty()) {
             return;
@@ -72,9 +80,13 @@ public class CalculatorController implements ActionListener {
             default:
                 break;
         }
+        // 每次模型状态改变后立即刷新两个显示标签。
         view.setDisplays(model.getHistoryDisplay(), model.getCurrentDisplay());
     }
 
+    /**
+     * 把常用按键映射到按钮命令，保证键盘与鼠标交互一致。
+     */
     private void registerKeyboardShortcuts() {
         for (char digit = '0'; digit <= '9'; digit++) {
             registerKeyAction("DIGIT_" + digit, KeyStroke.getKeyStroke(digit), String.valueOf(digit));
@@ -99,6 +111,12 @@ public class CalculatorController implements ActionListener {
         registerKeyAction("DELETE", KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "CE");
     }
 
+    /**
+     * 注册单个快捷键：
+     * - name: 供 InputMap/ActionMap 使用的逻辑名称；
+     * - stroke: 触发该命令的按键组合；
+     * - command: 复用按钮命令，保证键盘事件走同一条流程。
+     */
     private void registerKeyAction(String name, KeyStroke stroke, String command) {
         view.registerKeyAction(name, stroke, new AbstractAction() {
             @Override

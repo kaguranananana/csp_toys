@@ -64,6 +64,7 @@ public class CalculatorView extends JFrame {
         setResizable(true);
         setMinimumSize(new Dimension(360, 520));
 
+        // 主内容面板使用 BorderLayout + 统一内边距，背景色与按钮色分离。
         JPanel content = new JPanel(new BorderLayout(16, 16));
         content.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         content.setBackground(WINDOW_BACKGROUND);
@@ -91,6 +92,10 @@ public class CalculatorView extends JFrame {
         return Collections.unmodifiableMap(buttonMap);
     }
 
+    /**
+     * 暴露给控制器使用的键盘注册入口：通过根窗体的 InputMap/ActionMap 实现全局快捷键。
+     * 这样无需在每个按钮上单独监听 KeyListener，逻辑也更集中。
+     */
     public void registerKeyAction(String actionName, KeyStroke keyStroke,
                                   javax.swing.Action action) {
         JComponent root = getRootPane();
@@ -166,6 +171,10 @@ public class CalculatorView extends JFrame {
         return label;
     }
 
+    /**
+     * 创建单个按钮并放入 GridBag 布局。
+     * gridX/gridY/gridWidth/gridHeight 控制按钮在网格中的位置和跨行跨列情况（例如 0 键跨两列）。
+     */
     private JButton addButton(JPanel panel, String label, ButtonCategory category,
                               int gridX, int gridY, int gridWidth, int gridHeight) {
         RoundedButton button = buildButton(label, category);
@@ -201,6 +210,9 @@ public class CalculatorView extends JFrame {
         return button;
     }
 
+    /**
+     * 不同按钮类别对应不同底色：功能键偏深、运算符高亮、等号使用品牌色。
+     */
     private Color colorForCategory(ButtonCategory category) {
         switch (category) {
             case FUNCTION:
@@ -266,6 +278,7 @@ public class CalculatorView extends JFrame {
             } else if (model.isRollover()) {
                 fill = hoverColor;
             }
+            // 使用抗锯齿绘制圆角矩形，营造 Fluent 风格的柔和高光。
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(fill);

@@ -256,18 +256,18 @@ public class MainFrame extends JFrame {
      * 内部文档窗体：只负责可视化展示
      */
     public static class DocumentInternalFrame extends JInternalFrame {
-        private final JTextArea textArea;
+        private final JTextPane textArea;
 
         public DocumentInternalFrame(String title) {
             super(title, true, true, true, true);
-            textArea = new JTextArea();
+            textArea = new JTextPane();
             JScrollPane scrollPane = new JScrollPane(textArea);
             setSize(400, 300);
             setLayout(new BorderLayout());
             add(scrollPane, BorderLayout.CENTER);
         }
 
-        public JTextArea getTextArea() {
+        public JTextPane getTextArea() {
             return textArea;
         }
     }

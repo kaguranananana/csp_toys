@@ -17,10 +17,8 @@ public class DocumentModel {
     private boolean newDocument = true;
     /** 文档是否被修改 */
     private boolean dirty;
-    /** 当前字体 */
+    /** 当前字体（作为默认外观） */
     private Font font = new Font("SansSerif", Font.PLAIN, 14);
-    /** 是否启用下划线 */
-    private boolean underline;
 
     /**
      * 从文件加载文本内容
@@ -86,19 +84,14 @@ public class DocumentModel {
     }
 
     /**
-     * 设置字体及下划线状态
+     * 设置字体作为整个文档的默认外观
      */
-    public void setFontStyle(Font font, boolean underline) {
+    public void setFontStyle(Font font) {
         this.font = font == null ? new Font("SansSerif", Font.PLAIN, 14) : font;
-        this.underline = underline;
         this.dirty = true;
     }
 
     public Font getFontStyle() {
         return font;
-    }
-
-    public boolean isUnderline() {
-        return underline;
     }
 }

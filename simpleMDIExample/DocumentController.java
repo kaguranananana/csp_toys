@@ -3,10 +3,14 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionListener;
-import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -155,7 +159,7 @@ public class DocumentController {
 
             @Override
             public void internalFrameActivated(InternalFrameEvent e) {
-                syncFontControls(model);
+                syncFontControls(frame);
             }
         });
         frame.getTextArea().getDocument().addDocumentListener(new DocumentListener() {
@@ -182,7 +186,8 @@ public class DocumentController {
                 updateFrameTitle(frame, model);
             }
         });
-        syncFontControls(model);
+        frame.getTextArea().addCaretListener(e -> syncFontControls(frame));
+        syncFontControls(frame);
         applyFontToTextArea(frame, model);
         updateFrameTitle(frame, model);
     }
@@ -240,7 +245,7 @@ public class DocumentController {
         frame.getTextArea().setCaretPosition(0);
         applyFontToTextArea(frame, model);
         updateFrameTitle(frame, model);
-        syncFontControls(model);
+        syncFontControls(frame);
     }
 
     /**
@@ -275,13 +280,13 @@ public class DocumentController {
         }
         int style = current.getStyle();
         Font newFont = new Font(selectedFamily, style, size);
-        model.setFontStyle(newFont, model.isUnderline());
+        model.setFontStyle(newFont);
         applyFontToTextArea(frame, model);
-        syncFontControls(model);
+        syncFontControls(frame);
     }
 
     /**
-     * 切换粗体/斜体
+     * 切换粗体/斜体（仅作用于当前选区；如果没有选区则影响后续输入）
      */
     private void toggleStyle(int styleFlag) {
         MainFrame.DocumentInternalFrame frame = view.getSelectedDocumentFrame();
@@ -292,17 +297,39 @@ public class DocumentController {
         if (model == null) {
             return;
         }
-        Font current = model.getFontStyle();
-        boolean hasFlag = (current.getStyle() & styleFlag) == styleFlag;
-        int newStyle = hasFlag ? current.getStyle() & ~styleFlag : current.getStyle() | styleFlag;
-        Font updated = new Font(current.getFamily(), newStyle, current.getSize());
-        model.setFontStyle(updated, model.isUnderline());
-        applyFontToTextArea(frame, model);
-        syncFontControls(model);
+        JTextPane textPane = frame.getTextArea();
+        int start = textPane.getSelectionStart();
+        int end = textPane.getSelectionEnd();
+        boolean isBoldFlag = styleFlag == Font.BOLD;
+        if (start == end) {
+            MutableAttributeSet inputAttrs = textPane.getInputAttributes();
+            boolean currentState = isBoldFlag ? StyleConstants.isBold(inputAttrs) : StyleConstants.isItalic(inputAttrs);
+            SimpleAttributeSet attrs = new SimpleAttributeSet();
+            if (isBoldFlag) {
+                StyleConstants.setBold(attrs, !currentState);
+                StyleConstants.setBold(inputAttrs, !currentState);
+            } else {
+                StyleConstants.setItalic(attrs, !currentState);
+                StyleConstants.setItalic(inputAttrs, !currentState);
+            }
+            textPane.setCharacterAttributes(attrs, false);
+        } else {
+            StyledDocument doc = textPane.getStyledDocument();
+            AttributeSet currentAttrs = doc.getCharacterElement(start).getAttributes();
+            boolean currentState = isBoldFlag ? StyleConstants.isBold(currentAttrs) : StyleConstants.isItalic(currentAttrs);
+            SimpleAttributeSet attrs = new SimpleAttributeSet();
+            if (isBoldFlag) {
+                StyleConstants.setBold(attrs, !currentState);
+            } else {
+                StyleConstants.setItalic(attrs, !currentState);
+            }
+            doc.setCharacterAttributes(start, end - start, attrs, false);
+        }
+        syncFontControls(frame);
     }
 
     /**
-     * 切换下划线
+     * 切换下划线（仅作用于当前选区；若无选区则影响输入属性）
      */
     private void toggleUnderline() {
         MainFrame.DocumentInternalFrame frame = view.getSelectedDocumentFrame();
@@ -313,39 +340,55 @@ public class DocumentController {
         if (model == null) {
             return;
         }
-        model.setFontStyle(model.getFontStyle(), !model.isUnderline());
-        applyFontToTextArea(frame, model);
-        syncFontControls(model);
+        JTextPane textPane = frame.getTextArea();
+        int start = textPane.getSelectionStart();
+        int end = textPane.getSelectionEnd();
+        if (start == end) {
+            MutableAttributeSet inputAttrs = textPane.getInputAttributes();
+            boolean currentState = StyleConstants.isUnderline(inputAttrs);
+            SimpleAttributeSet attrs = new SimpleAttributeSet();
+            StyleConstants.setUnderline(attrs, !currentState);
+            StyleConstants.setUnderline(inputAttrs, !currentState);
+            textPane.setCharacterAttributes(attrs, false);
+        } else {
+            StyledDocument doc = textPane.getStyledDocument();
+            AttributeSet currentAttrs = doc.getCharacterElement(start).getAttributes();
+            boolean currentState = StyleConstants.isUnderline(currentAttrs);
+            SimpleAttributeSet attrs = new SimpleAttributeSet();
+            StyleConstants.setUnderline(attrs, !currentState);
+            doc.setCharacterAttributes(start, end - start, attrs, false);
+        }
+        syncFontControls(frame);
     }
 
     /**
-     * 将模型中的字体同步到 JTextArea
+     * 将模型中的默认字体同步到 JTextPane（默认字体影响全部文字）
      */
     private void applyFontToTextArea(MainFrame.DocumentInternalFrame frame, DocumentModel model) {
         Font base = model.getFontStyle();
-        Font fontWithUnderline = applyUnderline(base, model.isUnderline());
-        frame.getTextArea().setFont(fontWithUnderline);
+        JTextPane textPane = frame.getTextArea();
+        textPane.setFont(base);
+        StyledDocument doc = textPane.getStyledDocument();
+        SimpleAttributeSet attrs = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(attrs, base.getFamily());
+        StyleConstants.setFontSize(attrs, base.getSize());
+        StyleConstants.setBold(attrs, (base.getStyle() & Font.BOLD) == Font.BOLD);
+        StyleConstants.setItalic(attrs, (base.getStyle() & Font.ITALIC) == Font.ITALIC);
+        doc.setCharacterAttributes(0, doc.getLength(), attrs, false);
     }
 
     /**
-     * 根据下划线状态生成新字体
+     * 根据当前光标/选区更新菜单/工具栏勾选状态
      */
-    private Font applyUnderline(Font base, boolean underline) {
-        if (!underline) {
-            return base;
+    private void syncFontControls(MainFrame.DocumentInternalFrame frame) {
+        if (frame == null) {
+            return;
         }
-        Map<TextAttribute, Object> attributes = new HashMap<>(base.getAttributes());
-        attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
-        return base.deriveFont(attributes);
-    }
-
-    /**
-     * 根据模型更新菜单/工具栏勾选状态
-     */
-    private void syncFontControls(DocumentModel model) {
-        boolean bold = (model.getFontStyle().getStyle() & Font.BOLD) == Font.BOLD;
-        boolean italic = (model.getFontStyle().getStyle() & Font.ITALIC) == Font.ITALIC;
-        boolean underline = model.isUnderline();
+        JTextPane textPane = frame.getTextArea();
+        AttributeSet attrs = textPane.getInputAttributes();
+        boolean bold = StyleConstants.isBold(attrs);
+        boolean italic = StyleConstants.isItalic(attrs);
+        boolean underline = StyleConstants.isUnderline(attrs);
 
         view.getBoldItem().setSelected(bold);
         view.getBoldButton().setSelected(bold);
